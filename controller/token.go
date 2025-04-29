@@ -1,11 +1,13 @@
 package controller
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"one-api/common"
 	"one-api/model"
 	"strconv"
+	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 func GetAllTokens(c *gin.Context) {
@@ -103,6 +105,46 @@ func GetTokenStatus(c *gin.Context) {
 		"total_used":      0, // not supported currently
 		"total_available": token.RemainQuota,
 		"expires_at":      expiredAt * 1000,
+	})
+}
+
+func GetTokenUsage(c *gin.Context) {
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		respError(c, respCodeAuth, "Authorization header is required")
+		return
+	}
+
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+		respError(c, respCodeAuth, "Invalid Bearer header format")
+		return
+	}
+	tokenKey := parts[1]
+
+	token, err := model.GetTokenByKey(tokenKey, true)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"code": 0,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	expiredAt := token.ExpiredTime
+	if expiredAt == -1 {
+		expiredAt = 0
+	}
+
+	respOk(c, gin.H{
+		"object":          "token_usage",
+		"id":              token.Id,
+		"name":            token.Name,
+		"total_granted":   token.RemainQuota + token.UsedQuota,
+		"total_used":      token.UsedQuota,
+		"total_available": token.RemainQuota,
+		"unlimited_quota": token.UnlimitedQuota,
+		"expires_at":      expiredAt,
 	})
 }
 
