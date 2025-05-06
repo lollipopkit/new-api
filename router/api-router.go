@@ -111,11 +111,13 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			tokenRoute.GET("/", controller.GetAllTokens)
 			tokenRoute.GET("/search", controller.SearchTokens)
-			tokenRoute.GET("/usage", controller.GetTokenUsage)
 			tokenRoute.GET("/:id", controller.GetToken)
 			tokenRoute.POST("/", controller.AddToken)
 			tokenRoute.PUT("/", controller.UpdateToken)
 			tokenRoute.DELETE("/:id", controller.DeleteToken)
+			// Attention: This uses [apiRouter] instead of [tokenRoute]
+			// , due to the user auth middleware
+			apiRouter.GET("/token/usage", controller.GetTokenUsage)
 		}
 		redemptionRoute := apiRouter.Group("/redemption")
 		redemptionRoute.Use(middleware.AdminAuth())

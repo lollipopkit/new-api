@@ -121,30 +121,23 @@ func GetTokenUsage(c *gin.Context) {
 		return
 	}
 	tokenKey := parts[1]
+	tokenKey = strings.TrimLeft(tokenKey, "sk-")
+
+	// TODO: Validate the key
 
 	token, err := model.GetTokenByKey(tokenKey, true)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 0,
-			"message": err.Error(),
-		})
+		respError(c, respCodeDb, "Failed to get token: "+err.Error())
 		return
 	}
 
-	expiredAt := token.ExpiredTime
-	if expiredAt == -1 {
-		expiredAt = 0
-	}
-
+	// Only return the metadata that we want to expose
 	respOk(c, gin.H{
-		"object":          "token_usage",
-		"id":              token.Id,
 		"name":            token.Name,
-		"total_granted":   token.RemainQuota + token.UsedQuota,
 		"total_used":      token.UsedQuota,
 		"total_available": token.RemainQuota,
 		"unlimited_quota": token.UnlimitedQuota,
-		"expires_at":      expiredAt,
+		"expires_at":      token.ExpiredTime,
 	})
 }
 
